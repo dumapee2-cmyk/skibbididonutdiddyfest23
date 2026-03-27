@@ -33,7 +33,7 @@ function normalizePhone(raw: string): string | null {
 
 blindDateRouter.post("/signup", upload.single("school_id"), async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { name, phone, gender, looking_for, hobbies } = req.body;
     const file = req.file;
 
     if (!name || !phone || !file) {
@@ -60,11 +60,17 @@ blindDateRouter.post("/signup", upload.single("school_id"), async (req, res) => 
     // Store school ID as base64 data URL
     const base64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
 
+    let parsedHobbies: string[] = [];
+    try { parsedHobbies = hobbies ? JSON.parse(hobbies) : []; } catch { /* ignore */ }
+
     const signup = await prisma.blindDateSignup.create({
       data: {
         name: name.trim(),
         phone: normalized,
         school_id_url: base64,
+        gender: gender || null,
+        looking_for: looking_for || null,
+        hobbies: parsedHobbies,
       },
     });
 

@@ -5,6 +5,7 @@ import { CreateAgentPage } from "./pages/CreateAgentPage";
 import { AgentPage } from "./pages/AgentPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { BlindDatePage } from "./pages/BlindDatePage";
+import { SignupPage } from "./pages/SignupPage";
 import "./index.css";
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/create" element={<CreateAgentPage />} />
         <Route path="/agent/:id" element={<AgentPage />} />
         <Route path="/blind-date" element={<BlindDatePage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

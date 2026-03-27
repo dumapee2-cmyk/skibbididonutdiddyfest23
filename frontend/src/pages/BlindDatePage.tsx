@@ -119,17 +119,28 @@ function PhoneMockup() {
 /* ═══ Page ═══ */
 type FormState = "idle" | "submitting" | "success";
 
+const HOBBY_OPTIONS = [
+  "hiking", "gym", "music", "cooking", "travel", "gaming",
+  "reading", "art", "photography", "movies", "dancing", "yoga",
+  "surfing", "skateboarding", "coffee", "boba", "anime", "fashion",
+  "sports", "festivals", "dogs", "cats", "foodie", "nightlife",
+];
+
 export function BlindDatePage() {
   const countdown = useCountdown();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [gender, setGender] = useState("");
+  const [lookingFor, setLookingFor] = useState("");
+  const [hobbies, setHobbies] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>("idle");
   const [error, setError] = useState("");
   const [position, setPosition] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const signupRef = useRef<HTMLDivElement>(null);
+  const toggleHobby = (h: string) => setHobbies(prev => prev.includes(h) ? prev.filter(x => x !== h) : prev.length < 6 ? [...prev, h] : prev);
 
   const handlePhoto = (f: File | null) => {
     setPhoto(f);
@@ -144,12 +155,16 @@ export function BlindDatePage() {
   };
   const submit = async () => {
     setError("");
-    if (!name.trim() || !phone.trim() || !photo) { setError("all fields are required"); return; }
+    if (!name.trim() || !phone.trim() || !photo) { setError("name, phone, and school ID are required"); return; }
+    if (!gender || !lookingFor) { setError("select your gender and who you're interested in"); return; }
     setFormState("submitting");
     const fd = new FormData();
     fd.append("name", name.trim());
     fd.append("phone", phone.replace(/\D/g, ""));
     fd.append("school_id", photo);
+    fd.append("gender", gender);
+    fd.append("looking_for", lookingFor);
+    fd.append("hobbies", JSON.stringify(hobbies));
     try {
       const res = await fetch("/api/blind-date/signup", { method: "POST", body: fd });
       const data = await res.json();
@@ -355,6 +370,37 @@ export function BlindDatePage() {
                   <input type="tel" value={phone} onChange={(e) => setPhone(fmt(e.target.value))} placeholder="phone"
                     className="w-full px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/25 transition bg-white/5" />
                   <p className="text-[11px] text-white/15 mt-1 ml-1">iMessage required</p>
+                </div>
+                <div className="flex gap-3">
+                  <select value={gender} onChange={(e) => setGender(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white bg-white/5 focus:outline-none focus:border-white/25 transition appearance-none">
+                    <option value="" className="bg-black">i am...</option>
+                    <option value="male" className="bg-black">male</option>
+                    <option value="female" className="bg-black">female</option>
+                    <option value="nonbinary" className="bg-black">nonbinary</option>
+                  </select>
+                  <select value={lookingFor} onChange={(e) => setLookingFor(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white bg-white/5 focus:outline-none focus:border-white/25 transition appearance-none">
+                    <option value="" className="bg-black">interested in...</option>
+                    <option value="male" className="bg-black">men</option>
+                    <option value="female" className="bg-black">women</option>
+                    <option value="everyone" className="bg-black">everyone</option>
+                  </select>
+                </div>
+                <div>
+                  <p className="text-[11px] text-white/15 ml-1 mb-2">pick your vibes (up to 6)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {HOBBY_OPTIONS.map(h => (
+                      <button key={h} type="button" onClick={() => toggleHobby(h)}
+                        className={`px-3 py-1.5 rounded-full text-[12px] transition ${
+                          hobbies.includes(h)
+                            ? "bg-white text-black font-semibold"
+                            : "bg-white/5 text-white/40 border border-white/10 hover:border-white/25"
+                        }`}>
+                        {h}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={(e) => handlePhoto(e.target.files?.[0] ?? null)} className="hidden" />
