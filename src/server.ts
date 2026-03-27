@@ -16,6 +16,7 @@ import icloudAuthRouter from "./routes/icloudAuth.js";
 import shortcutSyncRouter from "./routes/shortcutSync.js";
 import setupRouter from "./routes/setup.js";
 import { blindDateRouter } from "./routes/blindDate.js";
+import { bublRouter } from "./routes/bublProfiles.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -39,6 +40,7 @@ app.use("/api/icloud", icloudAuthRouter);
 app.use("/api/sync", shortcutSyncRouter);
 app.use("/setup", setupRouter);
 app.use("/api/blind-date", blindDateRouter);
+app.use("/api/bubl", bublRouter);
 
 // Serve frontend static files
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
