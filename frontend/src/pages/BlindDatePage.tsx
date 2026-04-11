@@ -1,28 +1,30 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
-import { motion, type Variants } from "motion/react";
+import { motion } from "motion/react";
+
+const px      = { fontFamily: "'Spencer', sans-serif" };
+const serif   = { fontFamily: "'Spencer', serif" };
+const bitter  = { fontFamily: "'Bitter Sour', cursive" };
 
 /* ─── Scrapbook paper styles ─── */
 type PaperStyle = "lined" | "grid" | "plain" | "yellow" | "pink";
 
 const paperConfigs: Record<PaperStyle, { bg: string; lineColor: string; lines: boolean; grid: boolean }> = {
-  lined:  { bg: "#1e1c1a", lineColor: "#2e2b28", lines: true,  grid: false },
-  grid:   { bg: "#1a1a1e", lineColor: "#28282e", lines: false, grid: true  },
-  plain:  { bg: "#1c1a18", lineColor: "",         lines: false, grid: false },
-  yellow: { bg: "#1e1c16", lineColor: "#2c2a1e", lines: true,  grid: false },
-  pink:   { bg: "#1e1a1c", lineColor: "#2e2628", lines: true,  grid: false },
+  lined:  { bg: "#0e1628", lineColor: "#1c2a44", lines: true,  grid: false },
+  grid:   { bg: "#0c1422", lineColor: "#182038", lines: false, grid: true  },
+  plain:  { bg: "#0d1525", lineColor: "",         lines: false, grid: false },
+  yellow: { bg: "#0f1520", lineColor: "#1e2a30", lines: true,  grid: false },
+  pink:   { bg: "#110f1e", lineColor: "#201830", lines: true,  grid: false },
 };
 
 const tapeColors = [
-  "bg-[#3a4a3a]/60",   // green washi
-  "bg-[#4a3a3a]/60",   // pink washi
-  "bg-[#3a3c4a]/60",   // blue washi
-  "bg-[#4a483a]/60",   // yellow washi
-  "bg-[#423a4a]/60",   // purple washi
+  "bg-[#3a5a3a]/55",
+  "bg-[#4a3a4a]/55",
+  "bg-[#3a4a5a]/55",
+  "bg-[#4a4a3a]/55",
+  "bg-[#3a3a5a]/55",
 ];
 
-/* Tape strip component */
 function Tape({ position, colorClass, rotation }: { position: string; colorClass: string; rotation: string }) {
   return (
     <div
@@ -46,7 +48,6 @@ function posToStyle(pos: string): React.CSSProperties {
   }
 }
 
-/* Notebook holes for left margin */
 function NotebookHoles() {
   return (
     <div className="absolute left-3 top-0 bottom-0 flex flex-col justify-evenly pointer-events-none">
@@ -57,21 +58,20 @@ function NotebookHoles() {
   );
 }
 
-/* Torn/ripped edge clip paths — jagged irregular outlines */
-const tornShapes = [
-  // ragged all edges, big tears
-  "polygon(1% 3%, 4% 0%, 8% 2%, 11% 0%, 16% 3%, 19% 1%, 24% 4%, 28% 0%, 32% 3%, 35% 1%, 39% 4%, 43% 0%, 47% 3%, 51% 1%, 55% 0%, 58% 3%, 62% 1%, 66% 4%, 70% 0%, 74% 3%, 78% 1%, 82% 4%, 86% 0%, 89% 2%, 93% 0%, 96% 3%, 100% 1%, 99% 6%, 100% 11%, 98% 16%, 100% 22%, 99% 28%, 100% 34%, 98% 40%, 100% 46%, 99% 52%, 100% 58%, 98% 64%, 100% 70%, 99% 76%, 100% 82%, 98% 88%, 100% 94%, 99% 98%, 96% 100%, 93% 97%, 89% 100%, 86% 98%, 82% 100%, 78% 97%, 74% 100%, 70% 98%, 66% 100%, 62% 97%, 58% 100%, 55% 98%, 51% 100%, 47% 97%, 43% 100%, 39% 98%, 35% 100%, 32% 97%, 28% 100%, 24% 98%, 19% 100%, 16% 97%, 11% 100%, 8% 98%, 4% 100%, 1% 97%, 0% 94%, 2% 88%, 0% 82%, 2% 76%, 0% 70%, 2% 64%, 0% 58%, 2% 52%, 0% 46%, 2% 40%, 0% 34%, 2% 28%, 0% 22%, 2% 16%, 0% 11%, 2% 6%)",
-  // torn bottom + right, clean top-left
-  "polygon(0% 0%, 5% 1%, 10% 0%, 15% 2%, 20% 0%, 25% 1%, 30% 0%, 35% 2%, 40% 0%, 45% 1%, 50% 0%, 55% 2%, 60% 0%, 65% 1%, 70% 0%, 75% 2%, 80% 0%, 85% 1%, 90% 0%, 95% 2%, 100% 0%, 100% 5%, 98% 10%, 100% 16%, 97% 22%, 100% 28%, 98% 34%, 100% 40%, 97% 46%, 100% 52%, 98% 58%, 100% 64%, 97% 70%, 100% 76%, 98% 82%, 100% 88%, 97% 94%, 100% 100%, 95% 98%, 90% 100%, 85% 97%, 80% 100%, 75% 98%, 70% 100%, 65% 97%, 60% 100%, 55% 98%, 50% 100%, 45% 97%, 40% 100%, 35% 98%, 30% 100%, 25% 97%, 20% 100%, 15% 98%, 10% 100%, 5% 97%, 0% 100%, 2% 94%, 0% 88%, 2% 82%, 0% 76%, 2% 70%, 0% 64%, 2% 58%, 0% 52%, 2% 46%, 0% 40%, 2% 34%, 0% 28%, 2% 22%, 0% 16%, 2% 10%, 0% 5%)",
-  // heavy tear on right side, wavy bottom
-  "polygon(0% 1%, 6% 0%, 12% 2%, 18% 0%, 24% 3%, 30% 0%, 36% 2%, 42% 0%, 48% 3%, 54% 0%, 60% 2%, 66% 0%, 72% 3%, 78% 0%, 84% 2%, 90% 0%, 96% 3%, 100% 1%, 99% 8%, 100% 14%, 97% 20%, 100% 26%, 96% 32%, 100% 38%, 97% 44%, 100% 50%, 96% 56%, 100% 62%, 97% 68%, 100% 74%, 96% 80%, 100% 86%, 97% 92%, 100% 98%, 96% 100%, 90% 97%, 84% 100%, 78% 96%, 72% 100%, 66% 97%, 60% 100%, 54% 96%, 48% 100%, 42% 97%, 36% 100%, 30% 96%, 24% 100%, 18% 97%, 12% 100%, 6% 96%, 0% 100%, 1% 92%, 0% 86%, 2% 80%, 0% 74%, 1% 68%, 0% 62%, 2% 56%, 0% 50%, 1% 44%, 0% 38%, 2% 32%, 0% 26%, 1% 20%, 0% 14%, 2% 8%)",
-  // notebook rip — straight left edge (from spiral), torn everywhere else
-  "polygon(0% 0%, 5% 2%, 10% 0%, 15% 3%, 20% 0%, 25% 2%, 30% 0%, 35% 3%, 40% 0%, 45% 2%, 50% 0%, 55% 3%, 60% 0%, 65% 2%, 70% 0%, 75% 3%, 80% 0%, 85% 2%, 90% 0%, 95% 3%, 100% 0%, 98% 7%, 100% 13%, 97% 19%, 100% 25%, 98% 31%, 100% 37%, 97% 43%, 100% 49%, 98% 55%, 100% 61%, 97% 67%, 100% 73%, 98% 79%, 100% 85%, 97% 91%, 100% 97%, 95% 100%, 89% 97%, 83% 100%, 77% 97%, 71% 100%, 65% 97%, 59% 100%, 53% 97%, 47% 100%, 41% 97%, 35% 100%, 29% 97%, 23% 100%, 17% 97%, 11% 100%, 5% 97%, 0% 100%)",
-  // rough all around with bigger tears
-  "polygon(2% 0%, 7% 3%, 12% 0%, 17% 4%, 22% 1%, 27% 3%, 32% 0%, 37% 4%, 42% 1%, 47% 3%, 52% 0%, 57% 4%, 62% 1%, 67% 3%, 72% 0%, 77% 4%, 82% 1%, 87% 3%, 92% 0%, 97% 4%, 100% 2%, 98% 8%, 100% 15%, 97% 22%, 100% 29%, 97% 36%, 100% 43%, 97% 50%, 100% 57%, 97% 64%, 100% 71%, 97% 78%, 100% 85%, 97% 92%, 100% 99%, 97% 100%, 92% 97%, 87% 100%, 82% 96%, 77% 100%, 72% 97%, 67% 100%, 62% 96%, 57% 100%, 52% 97%, 47% 100%, 42% 96%, 37% 100%, 32% 97%, 27% 100%, 22% 96%, 17% 100%, 12% 97%, 7% 100%, 2% 96%, 0% 99%, 3% 92%, 0% 85%, 3% 78%, 0% 71%, 3% 64%, 0% 57%, 3% 50%, 0% 43%, 3% 36%, 0% 29%, 3% 22%, 0% 15%, 3% 8%)",
+// Each paper gets a unique turbulence seed and frequency for varied torn edges
+const tornMaskParams = [
+  { seed: 3,  freq: "0.022 0.012", scale: 20 },
+  { seed: 11, freq: "0.018 0.010", scale: 24 },
+  { seed: 17, freq: "0.028 0.014", scale: 18 },
+  { seed: 23, freq: "0.020 0.011", scale: 22 },
+  { seed: 31, freq: "0.025 0.013", scale: 20 },
 ];
 
-/* Wrinkle/crease patterns — each paper gets a unique set of fold lines */
+function makeTornMask(seed: number, freq: string, scale: number): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><filter id="t" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="5" seed="${seed}" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="${scale}" xChannelSelector="R" yChannelSelector="G"/></filter><rect x="${scale}" y="${scale}" width="${800 - scale * 2}" height="${600 - scale * 2}" fill="white" filter="url(#t)"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
 const wrinklePatterns = [
   [{ angle: 135, pos: 35 }, { angle: 40, pos: 72 }, { angle: 160, pos: 18 }],
   [{ angle: 110, pos: 55 }, { angle: 25, pos: 30 }, { angle: 145, pos: 80 }],
@@ -86,7 +86,8 @@ function ScrapPaper({ children, index = 0, className = "" }: { children: React.R
   const style = styles[index % styles.length];
   const config = paperConfigs[style];
   const hasHoles = style === "lined" || style === "yellow";
-  const tornShape = tornShapes[index % tornShapes.length];
+  const { seed, freq, scale } = tornMaskParams[index % 5];
+  const tornMask = makeTornMask(seed, freq, scale);
   const tapePositions = [
     [{ pos: "tl", rot: "-18deg" }, { pos: "br", rot: "15deg" }],
     [{ pos: "tr", rot: "22deg" }, { pos: "bl", rot: "-20deg" }],
@@ -100,100 +101,42 @@ function ScrapPaper({ children, index = 0, className = "" }: { children: React.R
     : config.grid
     ? `repeating-linear-gradient(${config.lineColor} 0 1px, transparent 1px 28px), repeating-linear-gradient(90deg, ${config.lineColor} 0 1px, transparent 1px 28px)`
     : "";
-
-  // red margin line for lined paper
   const marginLine = config.lines
     ? `linear-gradient(90deg, transparent 38px, #5a2a2a 38px, #5a2a2a 39px, transparent 39px)`
     : "";
-
   const combinedBg = [linesBg, marginLine].filter(Boolean).join(", ");
 
   return (
     <div className={`relative ${className}`} style={{ transform: `rotate(${rotation})` }}>
-      {/* Tape strips */}
       {tapePositions.map((t, i) => (
         <Tape key={i} position={t.pos} colorClass={tapeColors[(index + i) % tapeColors.length]} rotation={t.rot} />
       ))}
-
       <div
-        className="relative shadow-[0_4px_20px_rgba(0,0,0,0.3),0_1px_3px_rgba(0,0,0,0.2)]"
+        className="relative shadow-[0_8px_40px_rgba(0,0,0,0.7),0_2px_8px_rgba(0,0,0,0.4),0_20px_60px_rgba(0,0,0,0.3)]"
         style={{
           backgroundColor: config.bg,
           backgroundImage: combinedBg || undefined,
-          clipPath: tornShape,
+          maskImage: tornMask,
+          WebkitMaskImage: tornMask,
+          maskSize: "100% 100%",
+          WebkitMaskSize: "100% 100%",
         }}
       >
-        {/* Notebook holes */}
         {hasHoles && <NotebookHoles />}
-
-        {/* Paper grain / fiber texture */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.06]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
-        />
-
-        {/* Wrinkle creases — multiple crossing folds */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")` }} />
         {wrinklePatterns[index % wrinklePatterns.length].map((w, i) => (
-          <div
-            key={i}
-            className="absolute pointer-events-none"
-            style={{
-              inset: 0,
-              background: `linear-gradient(${w.angle}deg, transparent ${w.pos - 1.5}%, rgba(255,255,255,0.03) ${w.pos - 0.5}%, rgba(0,0,0,0.06) ${w.pos}%, rgba(255,255,255,0.02) ${w.pos + 0.5}%, transparent ${w.pos + 1.5}%)`,
-            }}
-          />
+          <div key={i} className="absolute pointer-events-none" style={{ inset: 0, background: `linear-gradient(${w.angle}deg, transparent ${w.pos - 2}%, rgba(255,255,255,0.04) ${w.pos - 0.5}%, rgba(0,0,0,0.12) ${w.pos}%, rgba(255,255,255,0.03) ${w.pos + 0.5}%, transparent ${w.pos + 2}%)` }} />
         ))}
-
-        {/* Worn edges — uneven darkening around borders */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            boxShadow: "inset 0 0 30px rgba(0,0,0,0.15), inset 0 0 60px rgba(0,0,0,0.05)",
-          }}
-        />
-
-        {/* Coffee ring stain (only on some papers) */}
+        <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 40px rgba(0,0,0,0.35), inset 0 0 80px rgba(0,0,0,0.15)" }} />
         {(index === 1 || index === 4) && (
-          <div
-            className="absolute pointer-events-none rounded-full"
-            style={{
-              width: index === 1 ? 80 : 60,
-              height: index === 1 ? 80 : 60,
-              right: index === 1 ? 30 : "auto",
-              left: index === 4 ? 40 : "auto",
-              bottom: index === 1 ? 20 : "auto",
-              top: index === 4 ? 15 : "auto",
-              border: "2px solid rgba(90, 60, 30, 0.08)",
-              background: "radial-gradient(circle, transparent 60%, rgba(90, 60, 30, 0.04) 70%, transparent 80%)",
-            }}
-          />
+          <div className="absolute pointer-events-none rounded-full" style={{ width: index === 1 ? 80 : 60, height: index === 1 ? 80 : 60, right: index === 1 ? 30 : "auto", left: index === 4 ? 40 : "auto", bottom: index === 1 ? 20 : "auto", top: index === 4 ? 15 : "auto", border: "2px solid rgba(90,60,30,0.08)", background: "radial-gradient(circle, transparent 60%, rgba(90,60,30,0.04) 70%, transparent 80%)" }} />
         )}
-
-        {/* Dog-ear fold on corner (alternating corners) */}
         {(index === 0 || index === 3) && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              ...(index === 0
-                ? { bottom: 0, right: 0 }
-                : { top: 0, right: 0 }),
-              width: 28,
-              height: 28,
-              background: `linear-gradient(${index === 0 ? 225 : 315}deg, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.1) 50%)`,
-            }}
-          />
+          <div className="absolute pointer-events-none" style={{ ...(index === 0 ? { bottom: 0, right: 0 } : { top: 0, right: 0 }), width: 28, height: 28, background: `linear-gradient(${index === 0 ? 225 : 315}deg, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.1) 50%)` }} />
         )}
-
-        {/* Subtle water damage / aging spots */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='${index * 7}' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23w)'/%3E%3C/svg%3E")`,
-          }}
-        />
-
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='${index * 7}' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23w)'/%3E%3C/svg%3E")` }} />
         <div className={`relative ${hasHoles ? "pl-12 sm:pl-14" : "pl-8 sm:pl-12"} pr-8 sm:pr-12 py-8 sm:py-12 text-white`}>
           {children}
         </div>
@@ -202,178 +145,180 @@ function ScrapPaper({ children, index = 0, className = "" }: { children: React.R
   );
 }
 
-/* ─── Scroll-triggered section wrapper ─── */
-const sectionVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.05 },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
-  },
-};
-
-/* ─── Scrapbook memory hero photo ─── */
-function ScrapbookMemory() {
+/* ─── FAQ accordion ─── */
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="relative" style={{ transform: "rotate(2deg)" }}>
-      {/* Tape top-left */}
-      <div
-        className="absolute -top-2 left-4 sm:left-6 z-20 h-[18px] sm:h-[22px] w-[60px] sm:w-[80px] bg-[#d4e7d4]/50 shadow-sm"
-        style={{
-          transform: "rotate(-22deg)",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Cpath d='M0 0L4 4M4 0L0 4' stroke='%23ffffff' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E")`,
-        }}
-      />
-      {/* Tape top-right */}
-      <div
-        className="absolute -top-2 right-3 sm:right-5 z-20 h-[18px] sm:h-[22px] w-[55px] sm:w-[70px] bg-[#e8d4d4]/50 shadow-sm"
-        style={{
-          transform: "rotate(18deg)",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Cpath d='M0 0L4 4M4 0L0 4' stroke='%23ffffff' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E")`,
-        }}
-      />
-      {/* Tape bottom-right */}
-      <div
-        className="absolute -bottom-1 right-6 sm:right-8 z-20 h-[18px] sm:h-[22px] w-[50px] sm:w-[65px] bg-[#d4d8e7]/50 shadow-sm"
-        style={{
-          transform: "rotate(-12deg)",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Cpath d='M0 0L4 4M4 0L0 4' stroke='%23ffffff' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Polaroid frame */}
-      <div className="bg-[#f5f0e8] p-1.5 pb-10 sm:p-2 sm:pb-14 rounded-sm shadow-2xl">
-        <img src="/peson.jpg" alt="" className="w-[200px] sm:w-[260px] lg:w-[300px] aspect-[3/4] object-cover rounded-[1px]" />
-
-        {/* Handwritten caption under photo */}
-        <p
-          className="absolute bottom-2 sm:bottom-3 left-0 right-0 text-center text-[14px] sm:text-[16px] text-[#2a2520]/60"
-          style={{ fontFamily: "Caveat, cursive", transform: "rotate(-1deg)" }}
-        >
-          best night ever ♡
-        </p>
-      </div>
-
-      {/* Sticker — heart */}
-      <div
-        className="absolute -bottom-3 -left-3 sm:-left-4 z-20 text-[28px] sm:text-[34px]"
-        style={{ transform: "rotate(-15deg)" }}
-      >
-        💌
-      </div>
-
-      {/* Drawn star doodle top-right */}
-      <div
-        className="absolute -top-4 -right-4 sm:-right-5 z-20 text-[22px] sm:text-[28px]"
-        style={{ transform: "rotate(12deg)" }}
-      >
-        ✦
+    <div className="border-b border-white/[0.08]">
+      <button onClick={() => setOpen(!open)} className="w-full py-4 sm:py-5 flex items-center justify-between text-left gap-4">
+        <span className="text-white/60 text-[13px] sm:text-[14px] leading-relaxed" style={serif}>{q}</span>
+        <span className="text-[#f748b1]/50 text-[11px] shrink-0 transition-transform duration-300" style={{ transform: open ? "rotate(180deg)" : "none" }}>▼</span>
+      </button>
+      <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: open ? "200px" : "0", opacity: open ? 1 : 0 }}>
+        <p className="text-white/30 text-[12px] sm:text-[13px] leading-relaxed pb-5" style={serif}>{a}</p>
       </div>
     </div>
   );
 }
 
-/* ─── Phone mockup ─── */
-function PhoneMockup() {
+/* ═══ Lobby components ═══ */
+type LobbyState = "landing" | "creating" | "lobby" | "pending";
+
+function useCountdown() {
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  useEffect(() => {
+    function getNext() {
+      const now = new Date();
+      const pst = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+      const day = pst.getDay();
+      let daysUntil = (4 - day + 7) % 7;
+      if (daysUntil === 0 && pst.getHours() >= 19) daysUntil = 7;
+      const target = new Date(pst);
+      target.setDate(pst.getDate() + daysUntil);
+      target.setHours(19, 0, 0, 0);
+      return target.getTime() - pst.getTime();
+    }
+    const tick = () => {
+      const ms = getNext();
+      const s = Math.floor(ms / 1000);
+      setTime({ d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return time;
+}
+
+/* Ditto-style countdown digit */
+function CountdownDigit({ value, label }: { value: number; label: string }) {
+  const str = String(value).padStart(2, "0");
   return (
-    <div className="w-[270px] sm:w-[300px] shrink-0">
-      <div className="bg-black rounded-[48px] p-[12px] ring-1 ring-white/10 shadow-2xl shadow-black/50">
-        <div className="bg-black rounded-[36px] overflow-hidden relative" style={{maxHeight:'580px'}}>
-          {/* Status bar */}
-          <div className="relative px-6 pt-1 pb-0 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-white w-12">9:41</span>
-            <div className="absolute left-1/2 -translate-x-1/2 w-[90px] h-[22px] bg-black rounded-full" />
-            <div className="flex items-center gap-1 w-12 justify-end">
-              <svg width="13" height="10" viewBox="0 0 13 10" fill="white"><rect x="0" y="6" width="2.5" height="4" rx="0.5" opacity="0.4"/><rect x="3.5" y="4" width="2.5" height="6" rx="0.5" opacity="0.6"/><rect x="7" y="2" width="2.5" height="8" rx="0.5" opacity="0.8"/><rect x="10.5" y="0" width="2.5" height="10" rx="0.5"/></svg>
-              <svg width="15" height="10" viewBox="0 0 15 10" fill="white"><path d="M7.5 2.5C9.5 2.5 11.2 3.3 12.4 4.6L13.5 3.5C12 1.9 10 1 7.5 1S3 1.9 1.5 3.5L2.6 4.6C3.8 3.3 5.5 2.5 7.5 2.5Z" opacity="0.4"/><path d="M7.5 5C8.8 5 10 5.5 10.9 6.3L12 5.2C10.8 4.1 9.2 3.5 7.5 3.5S4.2 4.1 3 5.2L4.1 6.3C5 5.5 6.2 5 7.5 5Z" opacity="0.7"/><path d="M7.5 7.5C8.2 7.5 8.8 7.8 9.3 8.2L7.5 10L5.7 8.2C6.2 7.8 6.8 7.5 7.5 7.5Z"/></svg>
-              <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x="0.5" y="0.5" width="18" height="9" rx="2" stroke="white" strokeWidth="1" opacity="0.35"/><rect x="19.5" y="3" width="2" height="4" rx="1" fill="white" opacity="0.4"/><rect x="1.5" y="1.5" width="14" height="7" rx="1" fill="white"/></svg>
-            </div>
+    <div className="flex flex-col items-center">
+      <div className="flex gap-1">
+        {str.split("").map((ch, i) => (
+          <div key={i} className="w-[28px] sm:w-[44px] h-[36px] sm:h-[56px] bg-[#2D3A4E] border-2 border-[#f748b1]/30 flex items-center justify-center"
+            style={{ boxShadow: "0 0 8px #f748b115" }}>
+            <span className="text-[16px] sm:text-[28px] tabular-nums countdown-glow" style={px}>{ch}</span>
           </div>
-          {/* Header */}
-          <div className="px-3 pt-0 pb-1">
-            <div className="flex items-center gap-1 mb-1">
-              <svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8.5 1L1.5 8L8.5 15" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <span className="text-[14px] text-[#007AFF]">12</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img src="/bubl-logo.png" className="w-8 h-8 rounded-full object-cover mb-0.5" alt="bubl" />
-              <p className="text-[11px] font-semibold text-white">bubl</p>
-              <p className="text-[9px] text-[#8E8E93]">iMessage</p>
-            </div>
-          </div>
-          {/* Messages */}
-          <div className="px-3 pb-3 pt-2 space-y-[6px]">
-            {/* Bubl intro */}
-            <div className="flex justify-start">
-              <div className="max-w-[78%] px-3 py-[7px] text-[13px] leading-[1.35] bg-[#1C1C1E] text-[#E5E5EA] rounded-[18px] rounded-bl-[4px]">
-                hey eli! this is bella: I think you'd have a great time with her
-              </div>
-            </div>
-            <div className="flex justify-start">
-              <div className="max-w-[78%] px-3 py-[7px] text-[13px] leading-[1.35] bg-[#1C1C1E] text-[#E5E5EA] rounded-[18px] rounded-bl-[4px]">
-                you both love fashion AND matcha, you guys also both went to Japan last year!
-              </div>
-            </div>
-            <div className="flex justify-start">
-              <div className="max-w-[78%] px-3 py-[7px] text-[13px] leading-[1.35] bg-[#1C1C1E] text-[#E5E5EA] rounded-[18px] rounded-bl-[4px]">
-                wanna meet her?
-              </div>
-            </div>
-            {/* Profile card — Bella image */}
-            <div className="flex justify-start">
-              <div className="max-w-[92%] rounded-[14px] overflow-hidden">
-                <img src="/bubl. iphone ui.jpeg" className="w-full rounded-[14px]" alt="Bella profile card" />
-              </div>
-            </div>
-            {/* User reply */}
-            <div className="flex justify-end">
-              <div className="max-w-[78%] px-3 py-[7px] text-[13px] leading-[1.35] bg-[#007AFF] text-white rounded-[18px] rounded-br-[4px]">
-                omg YES
-              </div>
-            </div>
-          </div>
-          {/* Input bar */}
-          <div className="px-3 pb-4 pt-1">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#1C1C1E] flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#8E8E93" strokeWidth="1.5"/><path d="M7 4V10M4 7H10" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </div>
-              <div className="flex-1 h-[30px] rounded-full border border-[#3A3A3C] flex items-center px-3">
-                <span className="text-[13px] text-[#8E8E93]">iMessage</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-center pb-2">
-            <div className="w-[100px] h-[4px] rounded-full bg-white/20" />
-          </div>
-        </div>
+        ))}
       </div>
+      <span className="text-[6px] sm:text-[7px] text-[#64748b] mt-1.5 uppercase tracking-widest" style={px}>{label}</span>
+    </div>
+  );
+}
+
+/* Clean slot card for inside ScrapPaper */
+function SlotCard({ label, name, filled, color, onClick }: {
+  label: string; name?: string | null; filled: boolean; color: string; onClick?: () => void;
+}) {
+  const isClickable = !filled && !!onClick;
+  return (
+    <div
+      className={`flex flex-col items-center gap-2 w-[80px] sm:w-[100px] ${isClickable ? "cursor-pointer group" : ""}`}
+      onClick={() => !filled && onClick?.()}
+    >
+      <div
+        className={`w-full aspect-square flex items-center justify-center border transition-all duration-300 ${
+          isClickable
+            ? "border-[#f748b1]/40 bg-[#f748b1]/[0.05] group-hover:bg-[#f748b1]/[0.12] group-hover:border-[#f748b1]/70"
+            : filled
+            ? "bg-black/[0.12]"
+            : "border-white/[0.08] bg-black/[0.08]"
+        }`}
+        style={{
+          ...(filled ? { borderColor: `${color}55`, boxShadow: `0 0 16px ${color}25` } : {}),
+          ...(isClickable ? { boxShadow: "0 0 20px rgba(247,72,177,0.18), 0 0 40px rgba(247,72,177,0.06)" } : {}),
+        }}
+      >
+        {filled ? (
+          <span className="text-[24px] sm:text-[28px]">{color === "#ec4899" ? "👩" : "🧑"}</span>
+        ) : isClickable ? (
+          <span className="text-[13px] sm:text-[14px] text-[#f748b1]/60 group-hover:text-[#f748b1] transition-colors font-bold" style={px}>claim</span>
+        ) : (
+          <span className="text-[20px] sm:text-[24px] text-white/[0.1]">?</span>
+        )}
+      </div>
+      <span className="text-[8px] sm:text-[9px] text-center" style={{ ...px, color: filled ? `${color}cc` : isClickable ? "rgba(247,72,177,0.6)" : "rgba(255,255,255,0.2)" }}>
+        {filled ? (name || label) : label}
+      </span>
+      {filled && (
+        <div className="px-2 py-0.5 text-[6px] uppercase tracking-wider text-white/35 bg-white/[0.06]" style={px}>in</div>
+      )}
     </div>
   );
 }
 
 /* ═══ Page ═══ */
-type FormState = "idle" | "submitting" | "success";
-
 export function BlindDatePage() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [age, setAge] = useState("");
-  const [school, setSchool] = useState("");
-  const [gender, setGender] = useState<"guy" | "girl" | "">("");
-  const [formState, setFormState] = useState<FormState>("idle");
-  const [error, setError] = useState("");
-  const [, setPosition] = useState(0);
-  const signupRef = useRef<HTMLDivElement>(null);
+  const countdown = useCountdown();
+
+  const [view, setView] = useState<LobbyState>("landing");
+  const [lobbyCode, setLobbyCode] = useState("");
+  const [mySide, setMySide] = useState<"guy" | "girl">("guy");
+  const [, setMyName] = useState("");
+  const [creating] = useState(false);
+  const [slots, setSlots] = useState<{ label: string; name: string | null; filled: boolean; side: "guy" | "girl" }[]>([]);
+  const [pendingSignup, setPendingSignup] = useState<{ name: string; code: string; gender: string } | null>(null);
+  const [createData, setCreateData] = useState({ name: "", phone: "", role: "" as "guy" | "girl" | "" });
+  const [createError, setCreateError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("ditto-user");
+    if (saved) {
+      try {
+        const user = JSON.parse(saved);
+        if (user.name && user.teamCode) {
+          setMyName(user.name);
+          setLobbyCode(user.teamCode);
+          setView("lobby");
+          setSlots([
+            { label: "YOU", name: user.name, filled: true, side: "guy" },
+            { label: "FRIEND", name: null, filled: false, side: "guy" },
+            { label: "???", name: null, filled: false, side: "girl" },
+            { label: "???", name: null, filled: false, side: "girl" },
+          ]);
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    const pending = localStorage.getItem("ditto-pending-signup");
+    if (pending) {
+      try {
+        const data = JSON.parse(pending);
+        if (data.name && data.code) {
+          setPendingSignup(data);
+          setMyName(data.name);
+        }
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  const handleCreate = () => {
+    const { name, phone, role } = createData;
+    if (!name.trim() || !phone.trim()) { setCreateError("enter your name and phone"); return; }
+    if (!role) { setCreateError("are you a guy or girl?"); return; }
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const otherSide = role === "guy" ? "girl" : "guy";
+    setLobbyCode(code);
+    setMySide(role);
+    setMyName(name.trim());
+    setSlots([
+      { label: "YOU", name: name.trim(), filled: true, side: role },
+      { label: "FRIEND", name: null, filled: false, side: role },
+      { label: "???", name: null, filled: false, side: otherSide },
+      { label: "???", name: null, filled: false, side: otherSide },
+    ]);
+    setView("lobby");
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/party/${lobbyCode}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const fmt = (v: string) => {
     const d = v.replace(/\D/g, "").slice(0, 10);
@@ -381,300 +326,527 @@ export function BlindDatePage() {
     if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
     return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   };
-  const submit = async () => {
-    setError("");
-    if (!name.trim() || !phone.trim() || !age.trim() || !school || !gender) { setError("all fields are required"); return; }
-    setFormState("submitting");
-    const fd = new FormData();
-    fd.append("name", name.trim());
-    fd.append("phone", phone.replace(/\D/g, ""));
-    fd.append("age", age.trim());
-    fd.append("school", school);
-    fd.append("gender", gender);
 
-    // Save user info to localStorage so party page can use it
-    localStorage.setItem("bubl_user", JSON.stringify({
-      name: name.trim(),
-      phone: phone.replace(/\D/g, ""),
-      role: gender,
-    }));
-
-    // Fire signup to API in background, but always redirect
-    fetch("/api/blind-date/signup", { method: "POST", body: fd }).catch(() => {});
-    setFormState("success");
-    setTimeout(() => navigate("/party"), 1000);
-  };
-  const scrollToSignup = () => signupRef.current?.scrollIntoView({ behavior: "smooth" });
+  const inputClass = "w-full px-4 py-3 border border-white/10 bg-black/20 text-white text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition";
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative" style={px}>
 
-      {/* Background */}
+      {/* SVG filters */}
+      <svg width="0" height="0" className="absolute">
+        <defs>
+          <filter id="rough">
+            <feTurbulence type="fractalNoise" baseFrequency="0.065" numOctaves="3" seed="8" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Ditto screen effects */}
+      <div className="screen-vignette" />
+
+      {/* Background — fixed, covers full page */}
       <div className="fixed inset-0 z-0">
-        <img src="/bg.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 backdrop-blur-[12px] bg-black/40" />
+        <img src="/la-night-clean.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(10px)", transform: "scale(1.04)" }} />
+        <div className="absolute inset-0" style={{ background: "rgba(8,14,30,0.55)" }} />
       </div>
 
+      {/* Copied toast */}
+      {copied && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-fade-up">
+          <div className="px-5 py-3 border-4 border-[#00e436] bg-[#2B3548]">
+            <p className="text-[#00e436] text-[9px] sm:text-[11px] uppercase tracking-widest" style={px}>INVITE LINK COPIED!</p>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-white font-bold text-[18px] tracking-[-0.03em]">bubl.</span>
-          <button onClick={scrollToSignup} className="text-white/60 text-[13px] hover:text-white transition">
-            join waitlist &rarr;
+      <nav className="fixed top-0 w-full z-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+          <button
+            onClick={() => { setView("landing"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+          >
+            <img src="/ditto-logo-white.webp" alt="Ditto" className="h-5 sm:h-6" />
           </button>
+          <div className="flex items-center gap-2">
+            {lobbyCode && (
+              <>
+                <span className="text-[#ffec27] text-[8px] sm:text-[10px] tracking-wider" style={px}>{lobbyCode}</span>
+                <div className="w-2 h-2 bg-[#00e436] animate-pulse" />
+              </>
+            )}
+            <button
+              onClick={() => navigate("/signin")}
+              className="inline-flex items-center justify-center h-9 px-4 text-white text-[13px] rounded-full transition-all hover:bg-white/20"
+              style={{ background: "rgba(255,255,255,0.1)", boxShadow: "0 0 15px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.1)" }}
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="inline-flex items-center justify-center h-9 px-4 text-[#f748b1] text-[13px] font-semibold rounded-full transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{ background: "rgba(255,255,255,0.95)", boxShadow: "0 0 20px rgba(247,72,177,0.25)" }}
+            >
+              Join Now
+            </button>
+          </div>
         </div>
       </nav>
 
       {/* ─── Hero ─── */}
-      <motion.section
-        variants={sectionVariants} initial="hidden" animate="visible"
-        className="relative z-10 min-h-[100svh] flex flex-col justify-end px-5 sm:px-6 pb-16 sm:pb-24 pt-16">
-        <div className="max-w-5xl mx-auto w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 lg:gap-10">
-          <div className="flex-1 order-2 lg:order-1">
-            <motion.h1 variants={itemVariants} className="text-[56px] sm:text-[100px] lg:text-[160px] font-bold leading-[0.85] tracking-[-0.05em] text-white select-none">
-              bubl.
-            </motion.h1>
-            <motion.p variants={itemVariants} className="mt-4 sm:mt-6 text-white/60 text-[16px] sm:text-[22px] leading-snug max-w-md">
-              Get a curated match every Thursday. No app download, no follows, no dms.
-            </motion.p>
-            <motion.button variants={itemVariants} onClick={scrollToSignup}
-              className="mt-6 px-7 py-3 rounded-full bg-white text-black text-[14px] font-semibold hover:bg-white/90 active:scale-[0.97] transition">
-              Join the Waitlist
-            </motion.button>
+      <section className="relative min-h-[100svh] flex flex-col items-center justify-center px-4 sm:px-6 py-20">
+
+        <div className="relative z-10 stagger-in w-full max-w-4xl mx-auto">
+
+          {/* Headline */}
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-[52px] sm:text-[85px] lg:text-[110px] leading-none tracking-[0.02em] text-[#f748b1]" style={bitter}>
+              double the date
+            </h1>
+            <p className="mt-3 sm:mt-4 text-white text-[18px] sm:text-[28px] lg:text-[34px] leading-[1.3]" style={serif}>
+              every thursday
+            </p>
+            <p className="mt-2 sm:mt-3 text-[#ffec27]/80 text-[11px] sm:text-[14px] tracking-wide" style={px}>
+              you + your friend{" "}
+              <span className="text-[#f748b1]" style={bitter}>×</span>
+              {" "}a mystery duo
+            </p>
           </div>
-          <motion.div variants={itemVariants} className="shrink-0 order-1 lg:order-2 self-center lg:self-auto lg:mb-2">
-            <ScrapbookMemory />
-          </motion.div>
-        </div>
-      </motion.section>
 
-      <div className="relative z-10">
+          {/* Lobby — in ScrapPaper */}
+          <div className="max-w-2xl mx-auto">
 
-      {/* ─── Marquee divider ─── */}
-      <div className="border-y border-white/5 py-3 overflow-hidden">
-        <div className="flex whitespace-nowrap animate-[marquee_20s_linear_infinite]">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={i} className="text-white/10 text-[13px] font-mono uppercase tracking-[0.2em] mx-8">
-              iMessage only &middot; high school only &middot; every thursday &middot; no app required
-            </span>
-          ))}
-        </div>
-      </div>
+            {view === "landing" && (
+              <ScrapPaper index={3}>
+                {/* Mobile: 2×2 grid (guy/girl per row). Desktop: horizontal [your duo] x [mystery duo] */}
 
-      {/* ─── How it works — editorial layout ─── */}
-      <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }} className="py-20 sm:py-32 px-5 sm:px-6">
-        <ScrapPaper index={0} className="max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-[1fr_1px_1fr] gap-8 lg:gap-0">
-            <div className="lg:pr-16">
-              <motion.p variants={itemVariants} className="text-[20px] sm:text-[22px] text-white/40 mb-4 sm:mb-6" style={{ fontFamily: "Caveat, cursive", transform: "rotate(-2deg)" }}>How it works</motion.p>
-              <motion.h2 variants={itemVariants} className="text-[28px] sm:text-[36px] lg:text-[48px] font-bold tracking-[-0.03em] text-white leading-[1.05]">
-                Sign up.<br />
-                Get texted.<br />
-                Meet someone<br />
-                <span className="text-white/30">real.</span>
-              </motion.h2>
-            </div>
-            <div className="hidden lg:block bg-white/10" />
-            <div className="lg:pl-16 flex flex-col justify-center space-y-8">
-              {[
-                "Drop your name, number, and school ID.",
-                "Every Thursday we send you a match over iMessage.",
-                "Reply Yes — we set the date.",
-                "All ages are carefully matched to ensure safety.",
-              ].map((text, i) => (
-                <motion.div key={i} variants={itemVariants} className="flex gap-4 items-baseline">
-                  <span className="font-mono text-[12px] text-white/20 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                  <p className="text-white/50 text-[15px] leading-relaxed">{text}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </ScrapPaper>
-      </motion.section>
-
-      {/* ─── Pull quote ─── */}
-      <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="py-16 sm:py-20 px-5 sm:px-6">
-        <ScrapPaper index={1} className="max-w-4xl mx-auto text-center">
-          <motion.p variants={itemVariants} className="text-[22px] sm:text-[36px] lg:text-[44px] font-bold tracking-[-0.02em] leading-[1.15] text-white/80">
-            &ldquo;Instagram gave me digital <span className="text-white/30">&lsquo;connections.&rsquo;</span><br />
-            Bubl gave me something <span className="underline decoration-[4px] decoration-pink-500" style={{textUnderlineOffset:'4px'}}>real</span>.&rdquo;
-          </motion.p>
-          <motion.p variants={itemVariants} className="mt-4 font-mono text-[12px] text-white/20 uppercase tracking-[0.15em]">— actual high schooler, probably</motion.p>
-        </ScrapPaper>
-      </motion.section>
-
-      {/* ─── iMessage demo — offset layout ─── */}
-      <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="py-20 sm:py-32 px-5 sm:px-6">
-        <ScrapPaper index={2} className="max-w-5xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-16">
-            <motion.div variants={itemVariants} className="w-full lg:w-1/2 flex justify-center lg:justify-start">
-              <PhoneMockup />
-            </motion.div>
-            <div className="w-full lg:w-1/2 lg:pt-12">
-              <motion.p variants={itemVariants} className="text-[20px] sm:text-[22px] text-white/40 mb-4 sm:mb-6" style={{ fontFamily: "Caveat, cursive", transform: "rotate(1.5deg)" }}>No app needed</motion.p>
-              <motion.h2 variants={itemVariants} className="text-[28px] sm:text-[36px] lg:text-[44px] font-bold tracking-[-0.03em] text-white leading-[1.05] mb-4 sm:mb-6">
-                It lives in<br />your texts.
-              </motion.h2>
-              <motion.p variants={itemVariants} className="text-white/40 text-[15px] leading-[1.7] max-w-sm">
-                We text you. You reply yes. We reveal your match. The whole thing takes 30 seconds and you never leave iMessage.
-              </motion.p>
-              <motion.div variants={itemVariants} className="mt-6 flex">
-                <div className="bg-[#007AFF] text-white text-[13px] px-4 py-2 rounded-[18px] rounded-bl-[4px]">
-                  blue bubbles only
+                {/* Desktop layout */}
+                <div className="hidden sm:flex items-start justify-center gap-6">
+                  <div className="text-center flex-1">
+                    <p className="text-[#6366f1] text-[11px] mb-3 uppercase tracking-wider font-bold" style={px}>your duo</p>
+                    <div className="flex justify-center gap-4">
+                      {pendingSignup ? (
+                        <div className="flex flex-col items-center gap-2 w-[100px] cursor-pointer"
+                          onClick={() => navigate(`/signup?code=${pendingSignup.code}`)}>
+                          <div className="w-full aspect-square border border-yellow-400/40 bg-black/10 flex items-center justify-center">
+                            <span className="text-[22px]">✓</span>
+                          </div>
+                          <span className="text-[8px] text-yellow-600" style={px}>{pendingSignup.name.split(" ")[0]}</span>
+                          <span className="text-[6px] text-yellow-700/70 uppercase tracking-wider" style={px}>sign up</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 w-[100px] cursor-pointer group"
+                          onClick={() => navigate("/signup")}>
+                          <div className="w-full aspect-square border border-[#ec4899]/30 bg-black/10 flex items-center justify-center group-hover:border-[#ec4899]/60 transition-colors">
+                            <span className="text-[22px] text-[#ec4899]/50 group-hover:text-[#ec4899] transition-colors">▶</span>
+                          </div>
+                          <span className="text-[8px] text-[#ec4899]/70 font-bold" style={px}>sign up</span>
+                        </div>
+                      )}
+                      <div className="flex flex-col items-center gap-2 w-[100px]">
+                        <div className="w-full aspect-square border border-white/[0.07] bg-black/[0.06] flex items-center justify-center">
+                          <span className="text-[24px] text-white/[0.1]">+</span>
+                        </div>
+                        <span className="text-[8px] text-white/25" style={px}>friend</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="self-center pt-6 px-1">
+                    <span className="text-[28px] text-[#f748b1]/50 italic" style={bitter}>x</span>
+                  </div>
+                  <div className="text-center flex-1">
+                    <p className="text-[#ec4899] text-[11px] mb-3 uppercase tracking-wider font-bold" style={px}>mystery duo</p>
+                    <div className="flex justify-center gap-4">
+                      {[1, 2].map(i => (
+                        <div key={i} className="flex flex-col items-center gap-2 w-[100px]">
+                          <div className="w-full aspect-square border border-[#ec4899]/15 bg-black/[0.06] flex items-center justify-center">
+                            <span className="text-[26px] text-[#ec4899]/20">?</span>
+                          </div>
+                          <span className="text-[8px] text-white/20" style={px}>???</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-            </div>
-          </div>
-        </ScrapPaper>
-      </motion.section>
 
-      {/* ─── Photo collage (3-panel) ─── */}
-      <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="py-20 sm:py-32 px-5 sm:px-6 overflow-hidden">
-        <div className="max-w-5xl mx-auto">
-          <motion.p variants={itemVariants} className="text-[20px] sm:text-[24px] text-white/40 mb-10 sm:mb-16 text-center" style={{ fontFamily: "Caveat, cursive", transform: "rotate(-1.5deg)" }}>Real people. Real nights.</motion.p>
-          {/* Mobile: stacked polaroids */}
-          <div className="flex flex-col items-center gap-6 sm:hidden">
-            {[
-              { src: "/elsam4.jpg", rot: "-2deg" },
-              { src: "/rave1.jpg", rot: "1.5deg" },
-              { src: "/vibes.jpg", rot: "-1deg" },
-            ].map((img, i) => (
-              <motion.div key={i} variants={itemVariants} style={{ transform: `rotate(${img.rot})` }}>
-                <div className="bg-[#1a1a1a] p-1.5 pb-6 rounded">
-                  <img src={img.src} alt="" className="w-[280px] aspect-[4/3] object-cover rounded-sm" />
+                {/* Mobile layout: 2×2 grid */}
+                <div className="sm:hidden">
+                  <div className="grid grid-cols-2 gap-x-4 mb-3">
+                    <p className="text-[#6366f1] text-[9px] uppercase tracking-wider font-bold text-center" style={px}>your duo</p>
+                    <p className="text-[#ec4899] text-[9px] uppercase tracking-wider font-bold text-center" style={px}>mystery duo</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-4 justify-items-center">
+                    {pendingSignup ? (
+                      <div className="flex flex-col items-center gap-2 w-[80px] cursor-pointer"
+                        onClick={() => navigate(`/signup?code=${pendingSignup.code}`)}>
+                        <div className="w-full aspect-square border border-yellow-400/40 bg-black/10 flex items-center justify-center">
+                          <span className="text-[22px]">✓</span>
+                        </div>
+                        <span className="text-[8px] text-yellow-600" style={px}>{pendingSignup.name.split(" ")[0]}</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 w-[80px] cursor-pointer group"
+                        onClick={() => navigate("/signup")}>
+                        <div className="w-full aspect-square border border-[#ec4899]/30 bg-black/10 flex items-center justify-center group-hover:border-[#ec4899]/60 transition-colors">
+                          <span className="text-[18px] text-[#ec4899]/50 group-hover:text-[#ec4899] transition-colors">▶</span>
+                        </div>
+                        <span className="text-[8px] text-[#ec4899]/70 font-bold" style={px}>sign up</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col items-center gap-2 w-[80px]">
+                      <div className="w-full aspect-square border border-[#ec4899]/15 bg-black/[0.06] flex items-center justify-center">
+                        <span className="text-[22px] text-[#ec4899]/20">?</span>
+                      </div>
+                      <span className="text-[8px] text-white/20" style={px}>???</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-[80px]">
+                      <div className="w-full aspect-square border border-white/[0.07] bg-black/[0.06] flex items-center justify-center">
+                        <span className="text-[20px] text-white/[0.1]">+</span>
+                      </div>
+                      <span className="text-[8px] text-white/25" style={px}>+ friend</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 w-[80px]">
+                      <div className="w-full aspect-square border border-[#ec4899]/15 bg-black/[0.06] flex items-center justify-center">
+                        <span className="text-[22px] text-[#ec4899]/20">?</span>
+                      </div>
+                      <span className="text-[8px] text-white/20" style={px}>???</span>
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
+
+                <div className="mt-5 pt-4 border-t border-white/[0.07] text-center">
+                  {pendingSignup ? (
+                    <>
+                      <p className="text-white/35 text-[11px]" style={serif}>sign up to finish your registration</p>
+                      <p className="text-[18px] tracking-[0.3em] text-yellow-500/60 font-mono select-all mt-1">{pendingSignup.code}</p>
+                    </>
+                  ) : (
+                    <p className="text-white/50 text-[12px] sm:text-[14px] leading-relaxed" style={serif}>
+                      grab a friend.{" "}
+                      <span className="text-[#f748b1]">claim your spot before thursday.</span>
+                    </p>
+                  )}
+                </div>
+              </ScrapPaper>
+            )}
+
+            {view === "creating" && (
+              <ScrapPaper index={3}>
+                <h2 className="text-[16px] sm:text-[20px] text-white mb-1 text-center" style={serif}>start a lobby</h2>
+                <p className="text-white/30 text-[11px] mb-6 text-center" style={serif}>enter your info to create a party</p>
+                <div className="space-y-3">
+                  <input type="text" value={createData.name} onChange={e => setCreateData(d => ({ ...d, name: e.target.value }))} placeholder="name" className={inputClass} style={px} />
+                  <input type="tel" value={createData.phone} onChange={e => setCreateData(d => ({ ...d, phone: fmt(e.target.value) }))} placeholder="phone" className={inputClass} style={px} />
+                  <div className="flex gap-2">
+                    {(["guy", "girl"] as const).map(role => (
+                      <button key={role} onClick={() => setCreateData(d => ({ ...d, role }))}
+                        className="flex-1 py-3 text-[11px] border transition"
+                        style={{
+                          ...px,
+                          borderColor: createData.role === role ? (role === "guy" ? "#6366f1" : "#ec4899") : "rgba(255,255,255,0.1)",
+                          background: createData.role === role ? (role === "guy" ? "rgba(99,102,241,0.15)" : "rgba(236,72,153,0.15)") : "transparent",
+                          color: createData.role === role ? (role === "guy" ? "#818cf8" : "#f472b6") : "rgba(255,255,255,0.35)",
+                        }}>
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                  {createError && <p className="text-[11px] text-red-400/70 text-center" style={px}>{createError}</p>}
+                  <button onClick={handleCreate} disabled={creating}
+                    className="w-full py-3 border border-[#f748b1]/40 text-[#f748b1]/80 text-[11px] hover:bg-[#f748b1]/10 transition disabled:opacity-40"
+                    style={px}>
+                    {creating ? "loading..." : "create party"}
+                  </button>
+                  <button onClick={() => setView("landing")} className="w-full py-2 text-white/20 text-[10px] hover:text-white/35 transition" style={px}>back</button>
+                </div>
+              </ScrapPaper>
+            )}
+
+            {view === "lobby" && (
+              <>
+                <ScrapPaper index={3}>
+                  {/* Desktop: horizontal [your duo] x [mystery duo] */}
+                  <div className="hidden sm:flex items-start justify-center gap-6">
+                    <div className="text-center flex-1">
+                      <p className="text-[11px] mb-3 uppercase tracking-wider font-bold" style={{ ...px, color: mySide === "guy" ? "#818cf8" : "#ec4899" }}>your duo</p>
+                      <div className="flex justify-center gap-4">
+                        {slots.filter(s => s.side === mySide).map((s, i) => (
+                          <SlotCard key={i} label={s.label} name={s.name} filled={s.filled}
+                            color={mySide === "guy" ? "#818cf8" : "#ec4899"} onClick={!s.filled ? copyLink : undefined} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="self-center pt-6 px-1">
+                      <span className="text-[28px] text-[#f748b1]/50 italic" style={bitter}>x</span>
+                    </div>
+                    <div className="text-center flex-1">
+                      <p className="text-white/30 text-[11px] mb-3 uppercase tracking-wider font-bold" style={px}>mystery duo</p>
+                      <div className="flex justify-center gap-4">
+                        {slots.filter(s => s.side !== mySide).map((s, i) => (
+                          <SlotCard key={i} label={s.label} name={s.name} filled={s.filled}
+                            color={mySide === "guy" ? "#ec4899" : "#818cf8"} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile: 2×2 grid */}
+                  <div className="sm:hidden">
+                    <div className="grid grid-cols-2 gap-x-4 mb-3">
+                      <p className="text-[9px] uppercase tracking-wider font-bold text-center" style={{ ...px, color: mySide === "guy" ? "#818cf8" : "#ec4899" }}>your duo</p>
+                      <p className="text-white/30 text-[9px] uppercase tracking-wider font-bold text-center" style={px}>mystery duo</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-4 justify-items-center">
+                      {slots.filter(s => s.side === mySide).map((s, i) => {
+                        const ms = slots.filter(ms => ms.side !== mySide)[i];
+                        return [
+                          <SlotCard key={`my-${i}`} label={s.label} name={s.name} filled={s.filled}
+                            color={mySide === "guy" ? "#818cf8" : "#ec4899"} onClick={!s.filled ? copyLink : undefined} />,
+                          ms ? <SlotCard key={`m-${i}`} label={ms.label} name={ms.name} filled={ms.filled}
+                            color={mySide === "guy" ? "#ec4899" : "#818cf8"} /> : <div key={`empty-${i}`} />,
+                        ];
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-white/[0.07] text-center">
+                    {slots.find(s => s.side === mySide && !s.filled)
+                      ? <p className="text-white/30 text-[12px]" style={serif}>invite your friend — <span className="text-[#ffec27]/60">we'll match you thursday.</span></p>
+                      : <p className="text-white/40 text-[12px]" style={serif}>duo complete — waiting for the thursday drop</p>}
+                  </div>
+                </ScrapPaper>
+
+                <div className="mt-6 text-center">
+                  <p className="text-[#64748b] text-[7px] sm:text-[8px] mb-2 uppercase tracking-widest" style={px}>send this to your friend</p>
+                  <p className="text-[20px] sm:text-[28px] tracking-[0.35em] text-[#6366f1] select-all mb-3 font-mono">{lobbyCode}</p>
+                  <button onClick={copyLink}
+                    className="px-6 py-3 border-4 border-[#ffec27] bg-[#ffec27] text-[#111827] text-[9px] sm:text-[11px] hover:bg-white hover:border-white active:translate-y-[1px] transition-none"
+                    style={{ boxShadow: "4px 4px 0 #a38a1a", ...px }}>
+                    {copied ? "COPIED!" : "COPY INVITE LINK"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {view === "pending" && pendingSignup && (
+              <ScrapPaper index={3}>
+                <p className="text-white/35 text-[12px] mb-3 text-center" style={serif}>sign up to finish your registration</p>
+                <p className="text-[20px] sm:text-[24px] tracking-[0.3em] text-yellow-500/60 font-mono select-all text-center mb-6">{pendingSignup.code}</p>
+                <div className="text-center">
+                  <button onClick={() => navigate(`/signup?code=${pendingSignup.code}`)}
+                    className="inline-flex items-center px-8 py-3 bg-white hover:bg-white/90 transition rounded-full">
+                    <span className="text-black text-[13px] font-semibold" style={px}>Complete Sign Up →</span>
+                  </button>
+                </div>
+              </ScrapPaper>
+            )}
+
+          </div>
+
+          {/* Countdown */}
+          <div className="mt-7 sm:mt-10">
+            <p className="text-white/30 text-[9px] sm:text-[10px] text-center uppercase tracking-[0.3em] mb-3" style={px}>next drop in</p>
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              <CountdownDigit value={countdown.d} label="days" />
+              <span className="text-[#f748b1] text-[14px] sm:text-[22px] self-start mt-1 animate-pulse">:</span>
+              <CountdownDigit value={countdown.h} label="hrs" />
+              <span className="text-[#f748b1] text-[14px] sm:text-[22px] self-start mt-1 animate-pulse">:</span>
+              <CountdownDigit value={countdown.m} label="min" />
+              <span className="text-[#f748b1] text-[14px] sm:text-[22px] self-start mt-1 animate-pulse">:</span>
+              <CountdownDigit value={countdown.s} label="sec" />
+            </div>
+            <p className="mt-2.5 text-[#ffec27]/40 text-[7px] sm:text-[8px] text-center uppercase tracking-widest" style={px}>thursday 7 pm pst · new matches every week</p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── Scroll sections ─── */}
+      <div className="relative">
+
+        {/* Marquee */}
+        <div className="border-y border-white/[0.04] py-3 overflow-hidden" style={{ background: "rgba(8,14,30,0.6)" }}>
+          <div className="flex whitespace-nowrap animate-[marquee_18s_linear_infinite]">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span key={i} className="text-white/[0.1] text-[11px] uppercase tracking-[0.2em] mx-6" style={px}>
+                double dates only &nbsp;✦&nbsp; no apps &nbsp;✦&nbsp; every thursday &nbsp;✦&nbsp; bring a friend &nbsp;✦&nbsp; get matched
+              </span>
             ))}
           </div>
-          {/* Desktop: overlapping collage */}
-          <div className="hidden sm:block relative" style={{ minHeight: "500px" }}>
-            <div className="absolute left-0 top-0 w-[45%]" style={{ transform: "rotate(-3deg)" }}>
-              <div className="bg-[#1a1a1a] p-2 pb-8 rounded">
-                <img src="/elsam4.jpg" alt="" className="w-full aspect-[4/3] object-cover rounded-sm" />
-              </div>
-            </div>
-            <div className="absolute right-0 top-4 w-[42%]" style={{ transform: "rotate(2deg)" }}>
-              <div className="bg-[#1a1a1a] p-2 pb-8 rounded">
-                <img src="/rave1.jpg" alt="" className="w-full aspect-[4/3] object-cover rounded-sm" />
-              </div>
-            </div>
-            <div className="absolute left-[15%] bottom-0 w-[45%]" style={{ transform: "rotate(1.5deg)" }}>
-              <div className="bg-[#1a1a1a] p-2 pb-8 rounded">
-                <img src="/vibes.jpg" alt="" className="w-full aspect-[16/9] object-cover rounded-sm" />
-              </div>
-            </div>
-            <div className="absolute top-[-8px] left-[32%] z-10" style={{ transform: "rotate(-5deg)" }}>
-              <div className="bg-pink-400 px-4 py-2">
-                <p className="text-black font-black text-[34px] leading-none">100+</p>
-                <p className="text-black/60 font-bold text-[11px] uppercase">Matches</p>
-              </div>
-            </div>
-            <div className="absolute top-[45%] right-[5%] z-10" style={{ transform: "rotate(4deg)" }}>
-              <div className="bg-yellow-400 px-4 py-2">
-                <p className="text-black font-black text-[34px] leading-none">0</p>
-                <p className="text-black/60 font-bold text-[11px] uppercase">Swipes</p>
-              </div>
-            </div>
-          </div>
         </div>
-      </motion.section>
 
-      {/* ─── Signup form ─── */}
-      <motion.section ref={signupRef} variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }} className="py-20 sm:py-32 px-5 sm:px-6">
-        <ScrapPaper index={3} className="max-w-sm mx-auto">
-          {formState === "success" ? (
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white flex items-center justify-center">
-                <Check className="w-8 h-8 text-black" strokeWidth={3} />
-              </div>
-              <h2 className="text-[28px] font-bold text-white mb-2">You're In!</h2>
-              <p className="text-white/50 text-[15px] mb-2">we're busy curating your perfect match..</p>
-              <p className="text-white/30 text-[13px] mb-5">text bubl to receive your match, we use imsg!</p>
-              <a
-                href="sms:textbubl@icloud.com&body=Hey Bubl, I've signed up!"
-                className="inline-block px-8 py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-full transition-all"
-              >
-                Text Bubl →
-              </a>
-            </div>
-          ) : (
-            <>
-              <motion.p variants={itemVariants} className="text-[24px] text-white/40 mb-4 text-center" style={{ fontFamily: "Caveat, cursive", transform: "rotate(-1deg)" }}>Waitlist</motion.p>
-              <motion.h2 variants={itemVariants} className="text-[32px] sm:text-[44px] font-bold text-center mb-8 sm:mb-10 tracking-[-0.03em] text-white leading-[1.05]">
-                Get in.
-              </motion.h2>
-
-              <div className="space-y-3">
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="name"
-                  className="w-full px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/25 transition bg-white/5" />
-                <input type="tel" value={phone} onChange={(e) => setPhone(fmt(e.target.value))} placeholder="phone (iMessage only)"
-                  className="w-full px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/25 transition bg-white/5" />
-                <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="age"
-                  className="w-full px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/25 transition bg-white/5" />
-                <select value={school} onChange={(e) => setSchool(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-white/10 text-[15px] text-white focus:outline-none focus:border-white/25 transition bg-white/5 appearance-none cursor-pointer"
-                  style={{color: school ? 'white' : 'rgba(255,255,255,0.2)'}}>
-                  <option value="" disabled>school</option>
-                  <option value="Portola High School">Portola High School</option>
-                  <option value="Irvine High School">Irvine High School</option>
-                  <option value="Northwood High School">Northwood High School</option>
-                  <option value="Woodbridge High School">Woodbridge High School</option>
-                  <option value="Beckman High School">Beckman High School</option>
-                  <option value="Crean Lutheran High School">Crean Lutheran High School</option>
-                  <option value="University High School">University High School</option>
-                </select>
-
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setGender("guy")}
-                    className={`flex-1 py-3 rounded-lg text-[14px] font-semibold transition ${gender === "guy" ? "bg-blue-500/20 border border-blue-500/40 text-blue-400" : "border border-white/10 text-white/30 hover:text-white/50"}`}>
-                    guy
-                  </button>
-                  <button type="button" onClick={() => setGender("girl")}
-                    className={`flex-1 py-3 rounded-lg text-[14px] font-semibold transition ${gender === "girl" ? "bg-pink-500/20 border border-pink-500/40 text-pink-400" : "border border-white/10 text-white/30 hover:text-white/50"}`}>
-                    girl
-                  </button>
+        {/* ─── How to play ─── */}
+        <motion.section
+          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+          className="relative py-20 sm:py-32 px-5 sm:px-6"
+          style={{
+            backgroundImage: "url(/shadows.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}>
+          {/* Dark tint overlay */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(8,14,30,0.88), rgba(8,14,30,0.72), rgba(8,14,30,0.88))" }} />
+          <div className="relative z-10">
+          <ScrapPaper index={0} className="max-w-4xl mx-auto">
+            <h2 className="text-center text-[22px] sm:text-[36px] font-bold text-white mb-2" style={serif}>how to play</h2>
+            <p className="text-center text-[9px] sm:text-[10px] mb-14 sm:mb-20 tracking-[0.3em] text-[#f748b1]/60 uppercase" style={px}>— select stage —</p>
+            <div className="space-y-12 sm:space-y-20">
+              {[
+                { n: "01", title: "sign up", desc: "fill out the form and invite a friend as your duo", color: "#f748b1", img: "/dinner.jpg" },
+                { n: "02", title: "invite your duo", desc: "forward the invite link to your friend", color: "#818cf8", img: "/happy.jpg" },
+                { n: "03", title: "the thursday drop", desc: "we match your duo with another duo every thursday at 7 PM", color: "#fde047", img: "/japanesedinner.jpg" },
+                { n: "04", title: "show up", desc: "4 people, 1 night. zero awkwardness.", color: "#4ade80", img: null },
+              ].map((step, i) => (
+                <div key={step.n} className={`flex flex-col sm:flex-row items-center gap-6 sm:gap-14 ${i % 2 === 1 ? "sm:flex-row-reverse" : ""}`}>
+                  {step.img && (
+                    <div className="shrink-0 w-[110px] h-[110px] sm:w-[180px] sm:h-[180px] overflow-hidden" style={{ border: `2px solid ${step.color}55` }}>
+                      <img src={step.img} alt={step.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-3 mb-2 sm:mb-3">
+                      <span className="text-[28px] sm:text-[40px] font-bold tabular-nums" style={{ color: step.color, ...px }}>{step.n}</span>
+                      <div className="h-px flex-1 hidden sm:block" style={{ background: `${step.color}30` }} />
+                    </div>
+                    <h3 className="text-[17px] sm:text-[24px] font-semibold text-white mb-2" style={serif}>{step.title}</h3>
+                    <p className="text-white/40 text-[13px] sm:text-[15px] leading-relaxed" style={serif}>{step.desc}</p>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </ScrapPaper>
+          </div>
+        </motion.section>
 
-                {error && <p className="text-[13px] text-red-400 text-center">{error}</p>}
+        {/* ─── FAQ + CTA on griffith.jpg fixed bg ─── */}
+        <div className="relative"
+          style={{
+            backgroundImage: "url(/griffith.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(8,14,30,0.85), rgba(8,14,30,0.7), rgba(8,14,30,0.88))" }} />
 
-                <button onClick={submit} disabled={formState === "submitting"}
-                  className="w-full py-3 rounded-lg bg-white text-black font-semibold text-[14px] hover:bg-white/90 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
-                  {formState === "submitting"
-                    ? <div className="w-4 h-4 mx-auto border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                    : "Join Waitlist"}
+          {/* ─── FAQ ─── */}
+          <motion.section
+            initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+            className="relative z-10 py-14 sm:py-24 px-5 sm:px-6">
+            <ScrapPaper index={4} className="max-w-2xl mx-auto">
+              <p className="text-[20px] text-white/30 mb-8" style={{ fontFamily: "Caveat, cursive" }}>FAQ</p>
+              <FaqItem q="How does it work?" a="You and a friend sign up as a duo. Every Thursday we match your duo with another duo and plan the double date — all through this platform." />
+              <FaqItem q="Do I need an app?" a="No. Everything happens right here on this website." />
+              <FaqItem q="Do I need a teammate?" a="Yes — grab a friend and sign up together. That's the whole point." />
+              <FaqItem q="What if we don't like our match?" a="Reply 'no'. Both duos go back in the pool for next week." />
+              <FaqItem q="Is it free?" a="Yes." />
+            </ScrapPaper>
+          </motion.section>
+
+          {/* ─── CTA ─── */}
+          <motion.section
+            initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+            className="relative z-10 py-20 sm:py-32 px-5 sm:px-6 text-center">
+          <ScrapPaper index={2} className="max-w-4xl mx-auto">
+
+            <div className="flex items-end justify-center gap-4 sm:gap-6 mb-10 sm:mb-14">
+              <div className="shrink-0" style={{ transform: "rotate(-6deg) translateY(8px)" }}>
+                <div className="bg-white p-2 pb-6" style={{ width: 100, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                  <img src="/happy.jpg" alt="" className="w-full object-cover" style={{ height: 82, display: "block" }} />
+                </div>
+              </div>
+              <div className="shrink-0 relative" style={{ transform: "rotate(2deg)" }}>
+                <div className="bg-white p-2 pb-7" style={{ width: 130, boxShadow: "0 12px 40px rgba(0,0,0,0.7)" }}>
+                  <img src="/dinner.jpg" alt="" className="w-full object-cover" style={{ height: 108, display: "block" }} />
+                </div>
+                <svg className="absolute -right-5 -bottom-4 w-9 h-9" viewBox="0 0 40 38" fill="none" style={{ transform: "rotate(-8deg)" }}>
+                  <path d="M20 34 C18 31, 6 24, 4 17 C2 11, 5 5, 10 4 C13 3, 17 5, 20 9 C23 5, 27 3, 30 4 C35 5, 38 11, 36 17 C34 24, 22 31, 20 34 Z"
+                    stroke="#f748b1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                    style={{ filter: "url(#rough)" }} />
+                </svg>
+              </div>
+              <div className="shrink-0" style={{ transform: "rotate(7deg) translateY(6px)" }}>
+                <div className="bg-white p-2 pb-6" style={{ width: 100, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                  <img src="/couple.jpg" alt="" className="w-full object-cover" style={{ height: 82, display: "block" }} />
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[26px] sm:text-[40px] lg:text-[52px] text-white font-light leading-[1.2]" style={serif}>
+              you don't swipe.<br />
+              <span style={{ background: "linear-gradient(90deg, #f748b1, #a78bfa, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                you squad up.
+              </span>
+            </p>
+
+            <div className="mt-8 sm:mt-12">
+              <button
+                onClick={() => navigate("/signup")}
+                className="inline-flex items-center px-8 sm:px-10 py-3.5 sm:py-4 bg-white hover:bg-gray-100 active:scale-[0.98] transition-transform"
+                style={{ borderRadius: "50px", boxShadow: "0 0 40px rgba(247,72,177,0.3), 0 0 80px rgba(139,92,246,0.15)" }}
+              >
+                <span className="text-[#111827] text-[14px] sm:text-[16px] font-bold" style={px}>Sign Up →</span>
+              </button>
+            </div>
+
+          </ScrapPaper>
+          </motion.section>
+
+        </div>{/* end griffith bg */}
+
+        {/* Footer */}
+        <footer className="relative border-t border-white/[0.06]">
+          <img src="/griffith.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: "blur(18px)", transform: "scale(1.06)" }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(8,14,30,0.88)" }} />
+          <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-16 sm:pt-20 pb-12 sm:pb-16">
+
+            {/* Top row */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-10 sm:gap-0 mb-14 sm:mb-16">
+
+              {/* Brand */}
+              <div>
+                <img src="/ditto-logo-white.webp" alt="Ditto" className="h-6 sm:h-7 mb-3 opacity-80" />
+                <p className="text-white/35 text-[12px] sm:text-[13px] max-w-[220px] leading-relaxed" style={serif}>
+                  blind double dates, every thursday. no apps, no swiping.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <div className="flex flex-col items-start sm:items-end gap-3">
+                <p className="text-white/40 text-[11px] sm:text-[12px]" style={serif}>ready to double up?</p>
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="inline-flex items-center px-7 py-3 bg-white hover:bg-gray-100 active:scale-[0.98] transition-transform"
+                  style={{ borderRadius: "50px", boxShadow: "0 0 30px rgba(247,72,177,0.25)" }}
+                >
+                  <span className="text-[#111827] text-[13px] font-bold" style={px}>Sign Up →</span>
                 </button>
               </div>
-            </>
-          )}
-        </ScrapPaper>
-      </motion.section>
+            </div>
 
-      {/* ─── FAQ ─── */}
-      <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }} className="py-20 sm:py-32 px-5 sm:px-6">
-        <ScrapPaper index={4} className="max-w-xl mx-auto">
-          <motion.p variants={itemVariants} className="text-[24px] text-white/40 mb-12" style={{ fontFamily: "Caveat, cursive", transform: "rotate(2deg)" }}>FAQ</motion.p>
-          {[
-            { q: "How does matching work?", a: "Every Thursday we pair everyone and send results through iMessage. Both say yes, we set the event." },
-            { q: "Do I need an app?", a: "No. iMessage only." },
-            { q: "Why school ID?", a: "We verify every user is a real high school student. Your ID is never shared." },
-            { q: "What if I'm not into my match?", a: "Reply 'no'. Back in the pool next week." },
-            { q: "Is it free?", a: "Yes." },
-          ].map((f, i) => (
-            <motion.div key={i} variants={itemVariants} className="border-b border-white/5 py-5">
-              <h3 className="text-white/70 text-[15px] mb-1">{f.q}</h3>
-              <p className="text-white/30 text-[14px] leading-relaxed">{f.a}</p>
-            </motion.div>
-          ))}
-        </ScrapPaper>
-      </motion.section>
+            {/* Links row */}
+            <div className="flex flex-wrap gap-x-8 gap-y-3 mb-12">
+              {[
+                { label: "how it works", action: () => document.querySelector(".how-section")?.scrollIntoView({ behavior: "smooth" }) },
+                { label: "faq", action: () => document.querySelector(".faq-section")?.scrollIntoView({ behavior: "smooth" }) },
+                { label: "sign in", action: () => navigate("/signin") },
+                { label: "sign up", action: () => navigate("/signup") },
+              ].map(l => (
+                <button key={l.label} onClick={l.action}
+                  className="text-white/25 hover:text-white/60 text-[11px] sm:text-[12px] uppercase tracking-widest transition-colors"
+                  style={px}>
+                  {l.label}
+                </button>
+              ))}
+            </div>
 
-      {/* Footer */}
-      <footer className="py-10 px-6 border-t border-white/5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-white/20 font-bold text-[15px] tracking-[-0.03em]">bubl</span>
-          <p className="text-white/15 text-[12px] font-mono">every thursday</p>
-        </div>
-      </footer>
+            {/* Bottom */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-6 border-t border-white/[0.05]">
+              <p className="text-white/15 text-[10px]" style={px}>© 2026 ditto. all rights reserved.</p>
+              <p className="text-white/10 text-[9px] uppercase tracking-widest" style={px}>every thursday · 7 pm pst</p>
+            </div>
+
+          </div>
+        </footer>
 
       </div>
     </div>
